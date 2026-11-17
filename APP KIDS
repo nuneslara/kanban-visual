@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Modelo Ágil Assistivo</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Fredoka+One&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  :root {
+    --bg: #FFF9F0;
+    --card-todo: #E8F4FD;
+    --card-doing: #FFF3CD;
+    --card-help: #FFE4E1;
+    --card-done: #D4EDDA;
+    --col-todo: #5B9BD5;
+    --col-doing: #F5A623;
+    --col-help: #E07070;
+    --col-done: #5CB85C;
+    --text-main: #2D2D2D;
+    --text-soft: #6B6B6B;
+    --accent: #FF8C42;
+    --shadow: 0 4px 20px rgba(0,0,0,0.08);
+    --shadow-hover: 0 8px 30px rgba(0,0,0,0.15);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Nunito', sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  h1, h2, .display { font-family: 'Fredoka One', cursive; }
+ 
+  /* ── SCREENS ── */
+  .screen { display: none; min-height: 100vh; }
+  .screen.active { display: flex; flex-direction: column; }
+ 
+  /* ── HOME ── */
+  #home {
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #FFF9F0 0%, #FFE9CC 100%);
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+  #home::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 20% 80%, #FFDDB880 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, #C8E6FF80 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .home-logo { font-size: clamp(2.5rem, 6vw, 4rem); color: var(--accent); letter-spacing: -1px; text-align: center; }
+  .home-sub { font-size: clamp(1rem, 2.5vw, 1.3rem); color: var(--text-soft); text-align: center; font-weight: 600; margin-top: .5rem; }
+  .home-stars { font-size: 2rem; text-align: center; margin: 1.5rem 0; letter-spacing: .5rem; }
+  .home-btn {
+    display: flex; flex-direction: column; align-items: center; gap: .6rem;
+    background: white;
+    border: 3px solid transparent;
+    border-radius: 24px;
+    padding: 1.8rem 2.5rem;
+    width: min(320px, 90vw);
+    cursor: pointer;
+    box-shadow: var(--shadow);
+    transition: transform .2s, box-shadow .2s, border-color .2s;
+    margin: .6rem;
+  }
+  .home-btn:hover { transform: translateY(-4px); box-shadow: var(--shadow-hover); }
+  .home-btn.child { border-color: #5B9BD5; }
+  .home-btn.child:hover { background: #E8F4FD; }
+  .home-btn.adult { border-color: var(--accent); }
+  .home-btn.adult:hover { background: #FFF3E0; }
+  .home-btn .btn-icon { font-size: 3.5rem; }
+  .home-btn .btn-label { font-family: 'Fredoka One', cursive; font-size: 1.5rem; }
+  .home-btn .btn-desc { font-size: .85rem; color: var(--text-soft); text-align: center; font-weight: 600; }
+ 
+  /* ── TOP BAR ── */
+  .topbar {
+    display: flex; align-items: center; gap: .8rem;
+    padding: 1rem 1.5rem;
+    background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .back-btn {
+    background: #F0F0F0; border: none; border-radius: 12px;
+    padding: .5rem .9rem; font-size: 1.2rem; cursor: pointer;
+    transition: background .2s;
+    font-family: 'Nunito', sans-serif; font-weight: 800;
+  }
+  .back-btn:hover { background: #E0E0E0; }
+  .topbar-title { font-family: 'Fredoka One', cursive; font-size: 1.4rem; flex: 1; }
+  .period-badge {
+    background: #FFF3CD; border: 2px solid #F5A623;
+    border-radius: 999px; padding: .3rem .8rem;
+    font-size: .8rem; font-weight: 800; color: #A0640A;
+  }
+ 
+  /* ── PERIOD TABS ── */
+  .period-tabs {
+    display: flex; gap: .5rem; padding: 1rem 1.5rem .5rem;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .period-tabs::-webkit-scrollbar { display: none; }
+  .period-tab {
+    flex-shrink: 0;
+    background: white; border: 2px solid #E0E0E0;
+    border-radius: 999px; padding: .5rem 1.2rem;
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .9rem;
+    cursor: pointer; transition: all .2s;
+    display: flex; align-items: center; gap: .4rem;
+  }
+  .period-tab.active { background: var(--accent); border-color: var(--accent); color: white; }
+  .period-tab:hover:not(.active) { border-color: var(--accent); }
+ 
+  /* ── KANBAN ── */
+  #child { background: #F5F0FF; }
+  .kanban-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    padding: 1rem 1.5rem 2rem;
+    flex: 1;
+    overflow-x: auto;
+  }
+  @media (max-width: 900px) {
+    .kanban-board { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 500px) {
+    .kanban-board { grid-template-columns: 1fr; }
+  }
+  .kanban-col {
+    background: white;
+    border-radius: 20px;
+    padding: 1rem;
+    box-shadow: var(--shadow);
+    display: flex; flex-direction: column; gap: .8rem;
+    min-height: 200px;
+  }
+  .col-header {
+    display: flex; align-items: center; gap: .5rem;
+    font-family: 'Fredoka One', cursive; font-size: 1.1rem;
+    padding: .5rem .6rem;
+    border-radius: 12px; margin-bottom: .3rem;
+  }
+  .col-header.todo    { background: var(--card-todo); color: var(--col-todo); }
+  .col-header.doing   { background: var(--card-doing); color: #A0640A; }
+  .col-header.help    { background: var(--card-help); color: var(--col-help); }
+  .col-header.done    { background: var(--card-done); color: #2E7D32; }
+  .col-count {
+    margin-left: auto; background: rgba(0,0,0,0.1);
+    border-radius: 999px; padding: .1rem .5rem; font-size: .8rem; font-weight: 900;
+  }
+ 
+  /* ── TASK CARD ── */
+  .task-card {
+    border-radius: 16px;
+    padding: 1rem;
+    display: flex; flex-direction: column; gap: .6rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.07);
+    transition: transform .2s, box-shadow .2s;
+    position: relative; overflow: hidden;
+    animation: cardIn .3s ease;
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: scale(.95) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .task-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+  .task-card.todo  { background: var(--card-todo); border-left: 4px solid var(--col-todo); }
+  .task-card.doing { background: var(--card-doing); border-left: 4px solid var(--col-doing); }
+  .task-card.help  { background: var(--card-help); border-left: 4px solid var(--col-help); }
+  .task-card.done  { background: var(--card-done); border-left: 4px solid var(--col-done); }
+  .task-icon { font-size: 2.2rem; text-align: center; }
+  .task-name { font-weight: 800; font-size: 1rem; text-align: center; }
+  .task-diff {
+    font-size: .7rem; font-weight: 800; text-align: center;
+    padding: .2rem .6rem; border-radius: 999px; width: fit-content; margin: 0 auto;
+  }
+  .diff-easy   { background: #D4EDDA; color: #2E7D32; }
+  .diff-medium { background: #FFF3CD; color: #A0640A; }
+  .diff-hard   { background: #FFE4E1; color: #C62828; }
+  .task-actions { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: center; }
+  .act-btn {
+    border: none; border-radius: 10px; padding: .45rem .7rem;
+    font-family: 'Nunito', sans-serif; font-weight: 800; font-size: .78rem;
+    cursor: pointer; transition: transform .15s, opacity .15s;
+    display: flex; align-items: center; gap: .3rem;
+  }
+  .act-btn:hover { transform: scale(1.05); opacity: .9; }
+  .act-btn:active { transform: scale(.97); }
+  .btn-doing { background: #F5A623; color: white; }
+  .btn-todo  { background: #5B9BD5; color: white; }
+  .btn-help  { background: #E07070; color: white; }
+  .btn-done  { background: #5CB85C; color: white; }
+  .btn-obs   { background: #E0E0E0; color: #444; font-size: .72rem; }
+ 
+  /* ── ADULT AREA ── */
+  #adult { background: #F0F7FF; }
+  .adult-content { padding: 1.5rem; flex: 1; overflow-y: auto; }
+  .section-title { font-family: 'Fredoka One', cursive; font-size: 1.3rem; margin-bottom: 1rem; }
+  .stats-row { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .stat-card {
+    background: white; border-radius: 16px; padding: 1rem 1.5rem;
+    box-shadow: var(--shadow); flex: 1; min-width: 100px; text-align: center;
+  }
+  .stat-num { font-family: 'Fredoka One', cursive; font-size: 2rem; }
+  .stat-label { font-size: .8rem; color: var(--text-soft); font-weight: 600; }
+ 
+  .add-task-btn {
+    background: var(--accent); color: white; border: none;
+    border-radius: 16px; padding: 1rem 1.5rem; width: 100%;
+    font-family: 'Fredoka One', cursive; font-size: 1.2rem;
+    cursor: pointer; margin-bottom: 1.5rem;
+    display: flex; align-items: center; justify-content: center; gap: .6rem;
+    transition: transform .2s, box-shadow .2s;
+    box-shadow: 0 4px 15px rgba(255,140,66,0.4);
+  }
+  .add-task-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(255,140,66,0.5); }
+ 
+  .task-list { display: flex; flex-direction: column; gap: .8rem; }
+  .admin-card {
+    background: white; border-radius: 16px; padding: 1rem 1.2rem;
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: .8rem;
+    animation: cardIn .3s ease;
+  }
+  .admin-card-icon { font-size: 2rem; min-width: 2rem; }
+  .admin-card-info { flex: 1; }
+  .admin-card-name { font-weight: 800; font-size: 1rem; }
+  .admin-card-meta { font-size: .78rem; color: var(--text-soft); margin-top: .2rem; display: flex; gap: .5rem; flex-wrap: wrap; }
+  .meta-badge {
+    padding: .15rem .5rem; border-radius: 999px; font-weight: 700; font-size: .72rem;
+  }
+  .meta-period { background: #E8F4FD; color: var(--col-todo); }
+  .meta-status-todo   { background: var(--card-todo); color: var(--col-todo); }
+  .meta-status-doing  { background: var(--card-doing); color: #A0640A; }
+  .meta-status-help   { background: var(--card-help); color: var(--col-help); }
+  .meta-status-done   { background: var(--card-done); color: #2E7D32; }
+  .admin-card-actions { display: flex; gap: .4rem; }
+  .icon-btn {
+    background: #F5F5F5; border: none; border-radius: 10px;
+    padding: .5rem .7rem; font-size: 1rem; cursor: pointer;
+    transition: background .2s;
+  }
+  .icon-btn:hover { background: #E0E0E0; }
+  .icon-btn.del:hover { background: #FFE4E1; }
+ 
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+    z-index: 200; align-items: center; justify-content: center; padding: 1rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 24px; padding: 2rem;
+    width: min(480px, 100%); max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+    animation: modalIn .25s ease;
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(.93) translateY(20px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-title { font-family: 'Fredoka One', cursive; font-size: 1.5rem; margin-bottom: 1.5rem; }
+  .form-group { margin-bottom: 1.2rem; }
+  .form-label { font-weight: 800; font-size: .9rem; margin-bottom: .4rem; display: block; }
+  .form-input, .form-select, .form-textarea {
+    width: 100%; padding: .7rem 1rem;
+    border: 2px solid #E0E0E0; border-radius: 12px;
+    font-family: 'Nunito', sans-serif; font-size: 1rem;
+    transition: border-color .2s;
+    background: #FAFAFA;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline: none; border-color: var(--accent); background: white;
+  }
+  .icon-picker { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .icon-opt {
+    background: #F5F5F5; border: 2px solid transparent;
+    border-radius: 12px; padding: .4rem .7rem; font-size: 1.5rem;
+    cursor: pointer; transition: all .15s;
+  }
+  .icon-opt:hover { border-color: var(--accent); background: #FFF3E0; }
+  .icon-opt.selected { border-color: var(--accent); background: #FFF3E0; transform: scale(1.1); }
+  .modal-actions { display: flex; gap: .8rem; margin-top: 1.5rem; }
+  .btn-save {
+    flex: 1; background: var(--accent); color: white; border: none;
+    border-radius: 14px; padding: .9rem; font-family: 'Fredoka One', cursive; font-size: 1.1rem;
+    cursor: pointer; transition: transform .2s;
+  }
+  .btn-save:hover { transform: scale(1.02); }
+  .btn-cancel {
+    background: #F0F0F0; color: #555; border: none;
+    border-radius: 14px; padding: .9rem 1.5rem; font-family: 'Nunito', sans-serif; font-weight: 800;
+    cursor: pointer; transition: background .2s;
+  }
+  .btn-cancel:hover { background: #E0E0E0; }
+ 
+  /* ── CELEBRATION ── */
+  .celebration-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); z-index: 300;
+    align-items: center; justify-content: center;
+  }
+  .celebration-overlay.show { display: flex; }
+  .celebration-box {
+    background: white; border-radius: 28px; padding: 3rem 2.5rem;
+    text-align: center; max-width: 340px;
+    animation: popIn .4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  @keyframes popIn {
+    from { transform: scale(0.5); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+  .celebration-emoji { font-size: 5rem; display: block; margin-bottom: 1rem; }
+  .celebration-title { font-family: 'Fredoka One', cursive; font-size: 2rem; color: #5CB85C; margin-bottom: .5rem; }
+  .celebration-msg { font-size: 1.1rem; font-weight: 600; color: var(--text-soft); margin-bottom: 1.5rem; }
+  .celebration-close {
+    background: #5CB85C; color: white; border: none; border-radius: 14px;
+    padding: .9rem 2rem; font-family: 'Fredoka One', cursive; font-size: 1.1rem;
+    cursor: pointer; width: 100%;
+    box-shadow: 0 4px 15px rgba(92,184,92,0.4);
+  }
+  .confetti-particle {
+    position: fixed; top: -20px; border-radius: 4px;
+    animation: fall linear forwards;
+    pointer-events: none; z-index: 400;
+  }
+  @keyframes fall {
+    to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+  }
+ 
+  /* ── OBS TOOLTIP ── */
+  .obs-tooltip {
+    display: none; position: fixed; z-index: 500;
+    background: white; border-radius: 14px; padding: 1rem 1.2rem;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.2);
+    max-width: 260px; font-size: .9rem; font-weight: 600;
+    border-left: 4px solid var(--accent);
+  }
+  .obs-tooltip.show { display: block; animation: fadeIn .2s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+ 
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 2rem 1rem; color: var(--text-soft); }
+  .empty-state .es-icon { font-size: 3rem; display: block; margin-bottom: .5rem; }
+  .empty-state p { font-weight: 700; font-size: .95rem; }
+ 
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #CCC; border-radius: 999px; }
+</style>
+</head>
+<body>
+ 
+<!-- ════════════════ HOME SCREEN ════════════════ -->
+<div id="home" class="screen active">
+  <div style="position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;width:100%;">
+    <div class="home-stars">⭐ 🌈 ⭐</div>
+    <h1 class="home-logo">Modelo Ágil Assistivo</h1>
+    <p class="home-sub">Organizo minhas tarefas com alegria!</p>
+    <div style="margin-top:2.5rem;display:flex;flex-direction:column;align-items:center;gap:.5rem;">
+      <button class="home-btn child" onclick="goChild()">
+        <span class="btn-icon">🧒</span>
+        <span class="btn-label" style="color:#5B9BD5;">Minhas Tarefas</span>
+        <span class="btn-desc">Ver e fazer minhas atividades</span>
+      </button>
+      <button class="home-btn adult" onclick="goAdult()">
+        <span class="btn-icon">👩‍🏫</span>
+        <span class="btn-label" style="color:var(--accent);">Área do Adulto</span>
+        <span class="btn-desc">Cadastrar e acompanhar tarefas</span>
+      </button>
+    </div>
+    <p style="margin-top:2.5rem;font-size:.8rem;color:#AAA;font-weight:600;">✨ Feito com carinho para apoiar você ✨</p>
+  </div>
+</div>
+ 
+<!-- ════════════════ CHILD SCREEN ════════════════ -->
+<div id="child" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goHome()">← Início</button>
+    <span class="topbar-title">🧒 Minhas Tarefas</span>
+    <span class="period-badge" id="child-period-badge">🌅 Manhã</span>
+  </div>
+  <div class="period-tabs" id="child-periods">
+    <button class="period-tab active" data-period="all" onclick="filterPeriod(this,'all')">🌟 Todas</button>
+    <button class="period-tab" data-period="morning" onclick="filterPeriod(this,'morning')">🌅 Manhã</button>
+    <button class="period-tab" data-period="afternoon" onclick="filterPeriod(this,'afternoon')">☀️ Tarde</button>
+    <button class="period-tab" data-period="night" onclick="filterPeriod(this,'night')">🌙 Noite</button>
+  </div>
+  <div class="kanban-board">
+    <div class="kanban-col" id="col-todo">
+      <div class="col-header todo">📋 A Fazer <span class="col-count" id="cnt-todo">0</span></div>
+    </div>
+    <div class="kanban-col" id="col-doing">
+      <div class="col-header doing">⚡ Fazendo <span class="col-count" id="cnt-doing">0</span></div>
+    </div>
+    <div class="kanban-col" id="col-help">
+      <div class="col-header help">🙋 Preciso de Ajuda <span class="col-count" id="cnt-help">0</span></div>
+    </div>
+    <div class="kanban-col" id="col-done">
+      <div class="col-header done">✅ Feito <span class="col-count" id="cnt-done">0</span></div>
+    </div>
+  </div>
+</div>
+ 
+<!-- ════════════════ ADULT SCREEN ════════════════ -->
+<div id="adult" class="screen">
+  <div class="topbar">
+    <button class="back-btn" onclick="goHome()">← Início</button>
+    <span class="topbar-title">👩‍🏫 Área do Adulto</span>
+  </div>
+  <div class="adult-content">
+    <div class="stats-row" id="stats-row"></div>
+    <button class="add-task-btn" onclick="openModal()">➕ Adicionar Nova Tarefa</button>
+    <div class="section-title">📋 Tarefas Cadastradas</div>
+    <div class="period-tabs" style="padding:0 0 .8rem;">
+      <button class="period-tab active" data-period="all" onclick="filterAdminPeriod(this,'all')">🌟 Todas</button>
+      <button class="period-tab" data-period="morning" onclick="filterAdminPeriod(this,'morning')">🌅 Manhã</button>
+      <button class="period-tab" data-period="afternoon" onclick="filterAdminPeriod(this,'afternoon')">☀️ Tarde</button>
+      <button class="period-tab" data-period="night" onclick="filterAdminPeriod(this,'night')">🌙 Noite</button>
+    </div>
+    <div class="task-list" id="admin-task-list"></div>
+  </div>
+</div>
+ 
+<!-- ════════════════ MODAL FORM ════════════════ -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <h2 class="modal-title" id="modal-title">➕ Nova Tarefa</h2>
+    <input type="hidden" id="edit-id">
+    <div class="form-group">
+      <label class="form-label">📝 Nome da Tarefa</label>
+      <input class="form-input" id="f-name" type="text" placeholder="Ex: Escovar os dentes" maxlength="40">
+    </div>
+    <div class="form-group">
+      <label class="form-label">😊 Ícone da Tarefa</label>
+      <div class="icon-picker" id="icon-picker">
+        <!-- icons rendered by JS -->
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">🕐 Período do Dia</label>
+      <select class="form-select" id="f-period">
+        <option value="morning">🌅 Manhã</option>
+        <option value="afternoon">☀️ Tarde</option>
+        <option value="night">🌙 Noite</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">⭐ Nível de Dificuldade</label>
+      <select class="form-select" id="f-diff">
+        <option value="easy">😊 Fácil</option>
+        <option value="medium">😐 Médio</option>
+        <option value="hard">😤 Difícil</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">💬 Observações (opcional)</label>
+      <textarea class="form-textarea" id="f-obs" rows="2" placeholder="Ex: Lembre de usar o creme..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-save" onclick="saveTask()">💾 Salvar</button>
+    </div>
+  </div>
+</div>
+ 
+<!-- ════════════════ CELEBRATION ════════════════ -->
+<div class="celebration-overlay" id="celebration">
+  <div class="celebration-box">
+    <span class="celebration-emoji" id="cel-emoji">🎉</span>
+    <div class="celebration-title">Muito bem!</div>
+    <div class="celebration-msg" id="cel-msg">Você conseguiu! Continue assim!</div>
+    <button class="celebration-close" onclick="closeCelebration()">😄 Que Legal!</button>
+  </div>
+</div>
+ 
+<!-- ════════════════ OBS TOOLTIP ════════════════ -->
+<div class="obs-tooltip" id="obs-tooltip"></div>
+ 
+<script>
+// ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const ICONS = ['🦷','🛁','👕','🍽️','🎒','📚','🖊️','✏️','🎮','🧩','🎨','🏃','🌿','💊','😴','🥤','🧴','👟','🎵','📖','🥣','🧹','🪥','🧺','🌅','🌙','🍌','🍎','🥛','🎯'];
+const CELEBRATIONS = [
+  { e:'🎉', m:'Você conseguiu! Que orgulho!' },
+  { e:'⭐', m:'Incrível! Continue assim!' },
+  { e:'🏆', m:'Você é um campeão!' },
+  { e:'🌟', m:'Parabéns! Tarefa feita!' },
+  { e:'🦸', m:'Super herói em ação!' },
+  { e:'🎊', m:'Mandou muito bem!' },
+];
+const STATUS_LABELS = { todo:'A Fazer', doing:'Fazendo', help:'Preciso de Ajuda', done:'Feito' };
+const PERIOD_LABELS = { morning:'🌅 Manhã', afternoon:'☀️ Tarde', night:'🌙 Noite', all:'🌟 Todas' };
+const DIFF_LABELS   = { easy:'😊 Fácil', medium:'😐 Médio', hard:'😤 Difícil' };
+const DIFF_CLASSES  = { easy:'diff-easy', medium:'diff-medium', hard:'diff-hard' };
+ 
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let tasks = [];
+let childPeriodFilter = 'all';
+let adminPeriodFilter = 'all';
+let selectedIcon = ICONS[0];
+let editingId = null;
+ 
+// ─── STORAGE ──────────────────────────────────────────────────────────────────
+function save() { localStorage.setItem('maa_tasks', JSON.stringify(tasks)); }
+function load() {
+  const raw = localStorage.getItem('maa_tasks');
+  if (raw) { try { tasks = JSON.parse(raw); } catch(e) { tasks = []; } }
+  else tasks = sampleTasks();
+}
+function sampleTasks() {
+  return [
+    { id:'1', name:'Escovar os Dentes', icon:'🦷', period:'morning', diff:'easy', status:'todo', obs:'Usar pasta com flúor' },
+    { id:'2', name:'Tomar Banho', icon:'🛁', period:'morning', diff:'medium', status:'todo', obs:'' },
+    { id:'3', name:'Vestir a Roupa', icon:'👕', period:'morning', diff:'easy', status:'doing', obs:'Lembre de colocar a meia!' },
+    { id:'4', name:'Tomar o Café', icon:'🥣', period:'morning', diff:'easy', status:'done', obs:'' },
+    { id:'5', name:'Fazer a Mochila', icon:'🎒', period:'morning', diff:'medium', status:'todo', obs:'Caderno, lápis e estojo' },
+    { id:'6', name:'Fazer o Dever', icon:'📚', period:'afternoon', diff:'hard', status:'todo', obs:'Matemática - página 14' },
+    { id:'7', name:'Hora do Lanche', icon:'🍌', period:'afternoon', diff:'easy', status:'todo', obs:'' },
+    { id:'8', name:'Escovar os Dentes', icon:'🦷', period:'night', diff:'easy', status:'todo', obs:'' },
+    { id:'9', name:'Hora de Dormir', icon:'😴', period:'night', diff:'medium', status:'todo', obs:'Desligue a televisão!' },
+  ];
+}
+ 
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function goHome()  { show('home'); }
+function goChild() { show('child'); renderKanban(); }
+function goAdult() { show('adult'); renderAdmin(); }
+function show(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+ 
+// ─── PERIOD FILTER ────────────────────────────────────────────────────────────
+function filterPeriod(btn, period) {
+  document.querySelectorAll('#child-periods .period-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  childPeriodFilter = period;
+  const badge = document.getElementById('child-period-badge');
+  badge.textContent = PERIOD_LABELS[period] || '🌟 Todas';
+  renderKanban();
+}
+function filterAdminPeriod(btn, period) {
+  btn.closest('.period-tabs').querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  adminPeriodFilter = period;
+  renderAdmin();
+}
+ 
+// ─── KANBAN RENDER ────────────────────────────────────────────────────────────
+function filteredTasks(forAdmin = false) {
+  const p = forAdmin ? adminPeriodFilter : childPeriodFilter;
+  return p === 'all' ? tasks : tasks.filter(t => t.period === p);
+}
+function renderKanban() {
+  const cols = { todo:[], doing:[], help:[], done:[] };
+  filteredTasks().forEach(t => { if (cols[t.status]) cols[t.status].push(t); });
+  ['todo','doing','help','done'].forEach(s => {
+    const col = document.getElementById(`col-${s}`);
+    const header = col.querySelector('.col-header');
+    col.innerHTML = '';
+    col.appendChild(header);
+    document.getElementById(`cnt-${s}`).textContent = cols[s].length;
+    if (cols[s].length === 0) {
+      const em = document.createElement('div');
+      em.className = 'empty-state';
+      em.innerHTML = `<span class="es-icon">🗂️</span><p>Nenhuma tarefa aqui</p>`;
+      col.appendChild(em);
+    } else {
+      cols[s].forEach(t => col.appendChild(makeCard(t)));
+    }
+  });
+}
+function makeCard(t) {
+  const div = document.createElement('div');
+  div.className = `task-card ${t.status}`;
+  div.id = `card-${t.id}`;
+  const acts = buildActions(t);
+  div.innerHTML = `
+    <div class="task-icon">${t.icon}</div>
+    <div class="task-name">${esc(t.name)}</div>
+    <div class="task-diff ${DIFF_CLASSES[t.diff]}">${DIFF_LABELS[t.diff]}</div>
+    <div class="task-actions">${acts}</div>
+  `;
+  if (t.obs) {
+    const obsBtn = div.querySelector('.btn-obs');
+    if (obsBtn) {
+      obsBtn.addEventListener('click', (e) => showObs(e, t.obs));
+    }
+  }
+  return div;
+}
+function buildActions(t) {
+  let btns = '';
+  const s = t.status;
+  if (s !== 'doing' && s !== 'done') btns += `<button class="act-btn btn-doing" onclick="setStatus('${t.id}','doing')">⚡ Fazendo</button>`;
+  if (s !== 'todo'  && s !== 'done') btns += `<button class="act-btn btn-todo" onclick="setStatus('${t.id}','todo')">📋 A Fazer</button>`;
+  if (s !== 'help') btns += `<button class="act-btn btn-help" onclick="setStatus('${t.id}','help')">🙋 Ajuda!</button>`;
+  if (s !== 'done') btns += `<button class="act-btn btn-done" onclick="setStatus('${t.id}','done')">✅ Feito!</button>`;
+  if (t.obs) btns += `<button class="act-btn btn-obs">💬 Ver dica</button>`;
+  return btns;
+}
+function setStatus(id, newStatus) {
+  const t = tasks.find(x => x.id === id);
+  if (!t) return;
+  t.status = newStatus;
+  save();
+  renderKanban();
+  if (newStatus === 'done') celebrate(t);
+}
+ 
+// ─── CELEBRATION ──────────────────────────────────────────────────────────────
+function celebrate(task) {
+  const c = CELEBRATIONS[Math.floor(Math.random() * CELEBRATIONS.length)];
+  document.getElementById('cel-emoji').textContent = c.e;
+  document.getElementById('cel-msg').textContent = c.m;
+  document.getElementById('celebration').classList.add('show');
+  launchConfetti();
+}
+function closeCelebration() {
+  document.getElementById('celebration').classList.remove('show');
+}
+function launchConfetti() {
+  const colors = ['#FF8C42','#5B9BD5','#5CB85C','#F5A623','#E07070','#C778E0','#42C8B8'];
+  for (let i = 0; i < 50; i++) {
+    const el = document.createElement('div');
+    el.className = 'confetti-particle';
+    el.style.cssText = `
+      left:${Math.random()*100}vw;
+      width:${6+Math.random()*8}px;
+      height:${6+Math.random()*8}px;
+      background:${colors[Math.floor(Math.random()*colors.length)]};
+      animation-duration:${1.5+Math.random()*2}s;
+      animation-delay:${Math.random()*0.8}s;
+      transform:rotate(${Math.random()*360}deg);
+      opacity:1;
+    `;
+    document.body.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+}
+ 
+// ─── OBS TOOLTIP ──────────────────────────────────────────────────────────────
+function showObs(e, text) {
+  e.stopPropagation();
+  const tip = document.getElementById('obs-tooltip');
+  tip.textContent = '💬 ' + text;
+  tip.classList.add('show');
+  const r = e.target.getBoundingClientRect();
+  tip.style.top  = (r.bottom + 8 + window.scrollY) + 'px';
+  tip.style.left = Math.min(r.left, window.innerWidth - 280) + 'px';
+  setTimeout(() => tip.classList.remove('show'), 3500);
+}
+document.addEventListener('click', () => {
+  document.getElementById('obs-tooltip').classList.remove('show');
+});
+ 
+// ─── ADMIN RENDER ─────────────────────────────────────────────────────────────
+function renderAdmin() {
+  renderStats();
+  const list = document.getElementById('admin-task-list');
+  const ft = filteredTasks(true);
+  list.innerHTML = '';
+  if (ft.length === 0) {
+    list.innerHTML = `<div class="empty-state"><span class="es-icon">📭</span><p>Nenhuma tarefa cadastrada</p></div>`;
+    return;
+  }
+  ft.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'admin-card';
+    div.innerHTML = `
+      <div class="admin-card-icon">${t.icon}</div>
+      <div class="admin-card-info">
+        <div class="admin-card-name">${esc(t.name)}</div>
+        <div class="admin-card-meta">
+          <span class="meta-badge meta-period">${PERIOD_LABELS[t.period]}</span>
+          <span class="meta-badge meta-status-${t.status}">${STATUS_LABELS[t.status]}</span>
+          <span class="meta-badge ${DIFF_CLASSES[t.diff]}">${DIFF_LABELS[t.diff]}</span>
+          ${t.obs ? `<span class="meta-badge" style="background:#F5F5F5;color:#555;">💬 ${esc(t.obs.substring(0,30))}${t.obs.length>30?'…':''}</span>` : ''}
+        </div>
+      </div>
+      <div class="admin-card-actions">
+        <button class="icon-btn" title="Editar" onclick="editTask('${t.id}')">✏️</button>
+        <button class="icon-btn del" title="Excluir" onclick="deleteTask('${t.id}')">🗑️</button>
+      </div>
+    `;
+    list.appendChild(div);
+  });
+}
+function renderStats() {
+  const total = tasks.length;
+  const done  = tasks.filter(t => t.status === 'done').length;
+  const help  = tasks.filter(t => t.status === 'help').length;
+  const pct   = total > 0 ? Math.round(done/total*100) : 0;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-card"><div class="stat-num" style="color:#5B9BD5;">${total}</div><div class="stat-label">Total</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#5CB85C;">${done}</div><div class="stat-label">Feitas ✅</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:#E07070;">${help}</div><div class="stat-label">Precisam de ajuda 🙋</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--accent);">${pct}%</div><div class="stat-label">Concluído</div></div>
+  `;
+}
+ 
+// ─── MODAL ────────────────────────────────────────────────────────────────────
+function buildIconPicker() {
+  const picker = document.getElementById('icon-picker');
+  picker.innerHTML = '';
+  ICONS.forEach(ic => {
+    const btn = document.createElement('button');
+    btn.className = 'icon-opt' + (ic === selectedIcon ? ' selected' : '');
+    btn.textContent = ic;
+    btn.onclick = () => {
+      selectedIcon = ic;
+      picker.querySelectorAll('.icon-opt').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+    };
+    picker.appendChild(btn);
+  });
+}
+function openModal(id = null) {
+  editingId = id;
+  document.getElementById('modal-title').textContent = id ? '✏️ Editar Tarefa' : '➕ Nova Tarefa';
+  if (id) {
+    const t = tasks.find(x => x.id === id);
+    document.getElementById('f-name').value   = t.name;
+    document.getElementById('f-period').value = t.period;
+    document.getElementById('f-diff').value   = t.diff;
+    document.getElementById('f-obs').value    = t.obs || '';
+    selectedIcon = t.icon;
+  } else {
+    document.getElementById('f-name').value   = '';
+    document.getElementById('f-period').value = 'morning';
+    document.getElementById('f-diff').value   = 'easy';
+    document.getElementById('f-obs').value    = '';
+    selectedIcon = ICONS[0];
+  }
+  buildIconPicker();
+  document.getElementById('modal-overlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  editingId = null;
+}
+function saveTask() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('Por favor, escreva o nome da tarefa! 😊'); return; }
+  if (editingId) {
+    const t = tasks.find(x => x.id === editingId);
+    t.name   = name;
+    t.icon   = selectedIcon;
+    t.period = document.getElementById('f-period').value;
+    t.diff   = document.getElementById('f-diff').value;
+    t.obs    = document.getElementById('f-obs').value.trim();
+  } else {
+    tasks.push({
+      id: Date.now().toString(),
+      name, icon: selectedIcon,
+      period: document.getElementById('f-period').value,
+      diff:   document.getElementById('f-diff').value,
+      obs:    document.getElementById('f-obs').value.trim(),
+      status: 'todo'
+    });
+  }
+  save(); closeModal(); renderAdmin();
+}
+function editTask(id)   { openModal(id); }
+function deleteTask(id) {
+  if (!confirm('Deseja excluir esta tarefa? 🗑️')) return;
+  tasks = tasks.filter(x => x.id !== id);
+  save(); renderAdmin();
+}
+ 
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+ 
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+load();
+</script>
+</body>
+</html>
